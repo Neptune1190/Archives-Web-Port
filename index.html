@@ -20,18 +20,6 @@
     border: 1px solid #333;
     border-radius: 5px;
   }
-  button {
-    margin-top: 15px;
-    padding: 10px 20px;
-    background: #ff5555;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  #exportBtn { background: #2196f3; margin-left: 10px; }
-  #importBtn { background: #4caf50; margin-left: 10px; }
-  #clearBtn { background: #994caf; margin-left: 10px; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; }
   .row > div { flex: 1; min-width: 200px; }
   #layout { display: flex; gap: 20px; flex-wrap: wrap; }
@@ -46,12 +34,12 @@
   }
   .articleCard:hover { border-color: #ff5555; }
 
-  /* Popup Styles */
+  /* Reader Popup Styles */
   #popupOverlay {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.9);
     display: none;
     justify-content: center;
     align-items: center;
@@ -62,31 +50,24 @@
     border: 1px solid #333;
     border-radius: 8px;
     padding: 20px;
-    width: 90%;
-    max-width: 900px;
-    max-height: 90%;
+    width: 95%;
+    height: 95%;
     overflow-y: auto;
+    position: relative;
   }
-  #popup h3 { color: #ff5555; margin-top: 0; }
-  #popup input {
-    width: 100%;
-    margin-bottom: 10px;
-  }
-  #popup .contentEditable {
-    background: #0e0e10;
-    color: #fff;
-    padding: 10px;
-    border: 1px solid #333;
+  #popup h2 { color: #ff5555; margin-top: 0; }
+  #popupMeta { color: #aaa; margin-bottom: 15px; }
+  #popupContent { white-space: pre-wrap; }
+  #popupCloseBtn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #ff5555;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    cursor: pointer;
     border-radius: 5px;
-    min-height: 300px;
-    white-space: pre-wrap;
-    overflow-y: auto;
-  }
-  #popup .actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 15px;
   }
   footer {
     text-align: center;
@@ -127,21 +108,10 @@
 
   <div id="popupOverlay">
     <div id="popup">
-      <h3>View / Edit Article</h3>
-      <label>Title:</label>
-      <input id="popupTitle">
-      <label>Author:</label>
-      <input id="popupAuthor">
-      <label>Category:</label>
-      <input id="popupCategory">
-      <label>Date:</label>
-      <input id="popupDate">
-      <label>Content:</label>
-      <div id="popupContent" class="contentEditable" contenteditable="true"></div>
-      <div class="actions">
-        <button id="popupSaveBtn">Save</button>
-        <button id="popupCloseBtn">Close</button>
-      </div>
+      <button id="popupCloseBtn">Close</button>
+      <h2 id="popupTitle"></h2>
+      <div id="popupMeta"></div>
+      <div id="popupContent"></div>
     </div>
   </div>
 
@@ -201,48 +171,21 @@
       list.appendChild(div);
     });
   }
-
-  // Popup logic
   const popupOverlay = document.getElementById('popupOverlay');
   const popupTitle = document.getElementById('popupTitle');
-  const popupAuthor = document.getElementById('popupAuthor');
-  const popupCategory = document.getElementById('popupCategory');
-  const popupDate = document.getElementById('popupDate');
+  const popupMeta = document.getElementById('popupMeta');
   const popupContent = document.getElementById('popupContent');
-  const popupSaveBtn = document.getElementById('popupSaveBtn');
   const popupCloseBtn = document.getElementById('popupCloseBtn');
 
-  let currentArticle = null;
-
   function openPopup(article){
-    currentArticle = article;
-    popupTitle.value = article.title || '';
-    popupAuthor.value = article.author || '';
-    popupCategory.value = article.category || '';
-    popupDate.value = article.date || '';
+    popupTitle.textContent = article.title || '';
+    popupMeta.textContent = `${article.author} | ${article.category} | ${article.date}`;
     popupContent.innerHTML = article.content || '';
     popupOverlay.style.display = 'flex';
   }
 
   popupCloseBtn.onclick = ()=> {
     popupOverlay.style.display = 'none';
-    currentArticle = null;
-  };
-
-  popupSaveBtn.onclick = ()=>{
-    if(!currentArticle) return;
-    const updated = {
-      title: popupTitle.value.trim(),
-      author: popupAuthor.value.trim(),
-      category: popupCategory.value.trim(),
-      date: popupDate.value.trim(),
-      content: popupContent.innerHTML.trim()
-    };
-    const blob = new Blob([JSON.stringify(updated, null, 2)], {type:'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = currentArticle._filename || (updated.title.replace(/\s+/g,'_')+'.json');
-    a.click();
   };
 
   search.oninput = catFilter.onchange = authorFilter.onchange = renderArticles;
@@ -251,4 +194,3 @@
 </script>
 </body>
 </html>
-
