@@ -69,7 +69,6 @@
     border-radius: 5px;
   }
 
-  
   .subtitle {
     font-size: 20px;
     font-weight: bold;
@@ -156,8 +155,15 @@
   }
 
   function renderFilters() {
-    const cats = [...new Set(articles.map(a=>a.category).filter(Boolean))];
-    const authors = [...new Set(articles.map(a=>a.author).filter(Boolean))];
+    const cats = [...new Set(articles.map(a => a.category).filter(Boolean))];
+    const authorsSet = new Set();
+    articles.forEach(a => {
+      if(a.author) {
+        a.author.split(',').map(s => s.trim()).forEach(name => authorsSet.add(name));
+      }
+    });
+    const authors = [...authorsSet];
+
     catFilter.innerHTML = '<option value="">All</option>' + cats.map(c=>`<option>${c}</option>`).join('');
     authorFilter.innerHTML = '<option value="">All</option>' + authors.map(a=>`<option>${a}</option>`).join('');
   }
@@ -167,15 +173,16 @@
     const cat = catFilter.value;
     const author = authorFilter.value;
     list.innerHTML = '';
-    articles.filter(a =>
+
+    articles.filter(a => 
       (!query || a.title.toLowerCase().includes(query) || a.content.toLowerCase().includes(query)) &&
       (!cat || a.category === cat) &&
-      (!author || a.author === author)
-    ).forEach((a)=>{
+      (!author || a.author.split(',').map(s => s.trim()).includes(author))
+    ).forEach(a => {
       const div = document.createElement('div');
       div.className = 'articleCard';
       div.innerHTML = `<strong>${a.title}</strong><br>${a.author} | ${a.category} | ${a.date}`;
-      div.onclick = ()=>openPopup(a);
+      div.onclick = () => openPopup(a);
       list.appendChild(div);
     });
   }
@@ -193,7 +200,7 @@
     popupOverlay.style.display = 'flex';
   }
 
-  popupCloseBtn.onclick = ()=> {
+  popupCloseBtn.onclick = () => {
     popupOverlay.style.display = 'none';
   };
 
