@@ -34,7 +34,6 @@
   }
   .articleCard:hover { border-color: #ff5555; }
 
-  /* Reader Popup Styles */
   #popupOverlay {
     position: fixed;
     top: 0; left: 0;
@@ -69,6 +68,15 @@
     cursor: pointer;
     border-radius: 5px;
   }
+
+  
+  .subtitle {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 15px;
+    margin-bottom: 10px;
+  }
+
   footer {
     text-align: center;
     margin-top: 25px;
@@ -171,6 +179,7 @@
       list.appendChild(div);
     });
   }
+
   const popupOverlay = document.getElementById('popupOverlay');
   const popupTitle = document.getElementById('popupTitle');
   const popupMeta = document.getElementById('popupMeta');
