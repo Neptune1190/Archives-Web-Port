@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>☰ Article Explorer ☰</title>
+<style>
+  body {
+    font-family: monospace;
+    background: #0e0e10;
+    color: #f4f4f4;
+    padding: 20px;
+  }
+  h2 { color: #ff5555; }
+  label { display: block; margin-top: 10px; }
+  input, select {
+    width: 100%;
+    padding: 6px;
+    background: #1e1e22;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 5px;
+  }
+  button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: #ff5555;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  #exportBtn { background: #2196f3; margin-left: 10px; }
+  #importBtn { background: #4caf50; margin-left: 10px; }
+  #clearBtn { background: #994caf; margin-left: 10px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 200px; }
+  #layout { display: flex; gap: 20px; flex-wrap: wrap; }
+  #articleList { flex: 1 1 100%; }
+  .articleCard {
+    background: #1e1e22;
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 10px;
+    cursor: pointer;
+  }
+  .articleCard:hover { border-color: #ff5555; }
+
+  /* Popup Styles */
+  #popupOverlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+  }
+  #popup {
+    background: #1e1e22;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90%;
+    overflow-y: auto;
+  }
+  #popup h3 { color: #ff5555; margin-top: 0; }
+  #popup input {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  #popup .contentEditable {
+    background: #0e0e10;
+    color: #fff;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    min-height: 300px;
+    white-space: pre-wrap;
+    overflow-y: auto;
+  }
+  #popup .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+  }
+  footer {
+    text-align: center;
+    margin-top: 25px;
+    color: #777;
+    font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+  <h2>☰ Article Explorer ☰</h2>
+
+  <div class="row">
+    <div>
+      <label>Search:</label>
+      <input id="searchInput" placeholder="Search articles...">
+    </div>
+    <div>
+      <label>Filter by Category:</label>
+      <select id="filterCategory">
+        <option value="">All</option>
+      </select>
+    </div>
+    <div>
+      <label>Filter by Author:</label>
+      <select id="filterAuthor">
+        <option value="">All</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="layout">
+    <div id="articleList">
+      <h3>Articles</h3>
+      <div id="articles"></div>
+    </div>
+  </div>
+
+  <div id="popupOverlay">
+    <div id="popup">
+      <h3>View / Edit Article</h3>
+      <label>Title:</label>
+      <input id="popupTitle">
+      <label>Author:</label>
+      <input id="popupAuthor">
+      <label>Category:</label>
+      <input id="popupCategory">
+      <label>Date:</label>
+      <input id="popupDate">
+      <label>Content:</label>
+      <div id="popupContent" class="contentEditable" contenteditable="true"></div>
+      <div class="actions">
+        <button id="popupSaveBtn">Save</button>
+        <button id="popupCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>Made by Orpheus1190 (Neptune6866)</footer>
+
+<script>
+(async function(){
+  const list = document.getElementById('articles');
+  const search = document.getElementById('searchInput');
+  const catFilter = document.getElementById('filterCategory');
+  const authorFilter = document.getElementById('filterAuthor');
+
+  let articles = [];
+
+  async function loadArticles() {
+    try {
+      const res = await fetch('articles/index.json');
+      const files = await res.json();
+      const loaded = await Promise.all(
+        files.map(async f => {
+          const r = await fetch('articles/' + f);
+          const j = await r.json();
+          j._filename = f;
+          return j;
+        })
+      );
+      articles = loaded;
+      renderFilters();
+      renderArticles();
+    } catch (e) {
+      list.innerHTML = '<p style="color:#ff5555;">Failed to load articles.</p>';
+      console.error(e);
+    }
+  }
+
+  function renderFilters() {
+    const cats = [...new Set(articles.map(a=>a.category).filter(Boolean))];
+    const authors = [...new Set(articles.map(a=>a.author).filter(Boolean))];
+    catFilter.innerHTML = '<option value="">All</option>' + cats.map(c=>`<option>${c}</option>`).join('');
+    authorFilter.innerHTML = '<option value="">All</option>' + authors.map(a=>`<option>${a}</option>`).join('');
+  }
+
+  function renderArticles() {
+    const query = search.value.toLowerCase();
+    const cat = catFilter.value;
+    const author = authorFilter.value;
+    list.innerHTML = '';
+    articles.filter(a =>
+      (!query || a.title.toLowerCase().includes(query) || a.content.toLowerCase().includes(query)) &&
+      (!cat || a.category === cat) &&
+      (!author || a.author === author)
+    ).forEach((a)=>{
+      const div = document.createElement('div');
+      div.className = 'articleCard';
+      div.innerHTML = `<strong>${a.title}</strong><br>${a.author} | ${a.category} | ${a.date}`;
+      div.onclick = ()=>openPopup(a);
+      list.appendChild(div);
+    });
+  }
+
+  // Popup logic
+  const popupOverlay = document.getElementById('popupOverlay');
+  const popupTitle = document.getElementById('popupTitle');
+  const popupAuthor = document.getElementById('popupAuthor');
+  const popupCategory = document.getElementById('popupCategory');
+  const popupDate = document.getElementById('popupDate');
+  const popupContent = document.getElementById('popupContent');
+  const popupSaveBtn = document.getElementById('popupSaveBtn');
+  const popupCloseBtn = document.getElementById('popupCloseBtn');
+
+  let currentArticle = null;
+
+  function openPopup(article){
+    currentArticle = article;
+    popupTitle.value = article.title || '';
+    popupAuthor.value = article.author || '';
+    popupCategory.value = article.category || '';
+    popupDate.value = article.date || '';
+    popupContent.innerHTML = article.content || '';
+    popupOverlay.style.display = 'flex';
+  }
+
+  popupCloseBtn.onclick = ()=> {
+    popupOverlay.style.display = 'none';
+    currentArticle = null;
+  };
+
+  popupSaveBtn.onclick = ()=>{
+    if(!currentArticle) return;
+    const updated = {
+      title: popupTitle.value.trim(),
+      author: popupAuthor.value.trim(),
+      category: popupCategory.value.trim(),
+      date: popupDate.value.trim(),
+      content: popupContent.innerHTML.trim()
+    };
+    const blob = new Blob([JSON.stringify(updated, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = currentArticle._filename || (updated.title.replace(/\s+/g,'_')+'.json');
+    a.click();
+  };
+
+  search.oninput = catFilter.onchange = authorFilter.onchange = renderArticles;
+  loadArticles();
+})();
+</script>
+</body>
+</html>
