@@ -12,16 +12,9 @@
   }
   h2 { color: #ff5555; }
   label { display: block; margin-top: 10px; }
-  input, select {
-    width: 100%;
-    padding: 6px;
-    background: #1e1e22;
-    color: #fff;
-    border: 1px solid #333;
-    border-radius: 5px;
-  }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .row > div { flex: 1; min-width: 200px; }
+  input, select { width: 100%; padding: 6px; background: #1e1e22; color: #fff; border: 1px solid #333; border-radius: 5px; }
+  #tabs { display: flex; gap: 10px; margin-bottom: 10px; }
+  #tabs button { padding: 6px 12px; border-radius: 5px; border: none; cursor: pointer; background:#444; color:#fff; }
   #layout { display: flex; gap: 20px; flex-wrap: wrap; }
   #articleList { flex: 1 1 100%; }
   .articleCard {
@@ -59,8 +52,8 @@
   #popupContent { white-space: pre-wrap; }
   #popupCloseBtn {
     position: absolute;
-    top: 15px;
-    right: 15px;
+    top: 10px;
+    right: 10px;
     background: #ff5555;
     color: white;
     border: none;
@@ -85,128 +78,142 @@
 </style>
 </head>
 <body>
-  <h2>☰ Article Explorer ☰</h2>
+<h2>☰ Article Explorer ☰</h2>
 
-  <div class="row">
-    <div>
-      <label>Search:</label>
-      <input id="searchInput" placeholder="Search articles...">
-    </div>
-    <div>
-      <label>Filter by Category:</label>
-      <select id="filterCategory">
-        <option value="">All</option>
-      </select>
-    </div>
-    <div>
-      <label>Filter by Author:</label>
-      <select id="filterAuthor">
-        <option value="">All</option>
-      </select>
-    </div>
+<div id="tabs">
+  <button onclick="switchTab('articles')">Articles</button>
+  <button onclick="switchTab('lore')">Lore Tapestries</button>
+</div>
+
+<div class="row" id="filters">
+  <div id="articleFilters">
+    <label>Search:</label>
+    <input id="searchInput" placeholder="Search articles...">
+    <label>Filter by Category:</label>
+    <select id="filterCategory"><option value="">All</option></select>
+    <label>Filter by Author:</label>
+    <select id="filterAuthor"><option value="">All</option></select>
   </div>
+</div>
 
-  <div id="layout">
-    <div id="articleList">
-      <h3>Articles</h3>
-      <div id="articles"></div>
-    </div>
+<div id="layout">
+  <div id="articleList">
+    <h3>Items</h3>
+    <div id="items"></div>
   </div>
+</div>
 
-  <div id="popupOverlay">
-    <div id="popup">
-      <button id="popupCloseBtn">Close</button>
-      <h2 id="popupTitle"></h2>
-      <div id="popupMeta"></div>
-      <div id="popupContent"></div>
-    </div>
+<div id="popupOverlay">
+  <div id="popup">
+    <button id="popupCloseBtn">Close</button>
+    <h2 id="popupTitle"></h2>
+    <div id="popupMeta"></div>
+    <div id="popupContent"></div>
   </div>
+</div>
 
-  <footer>Made by Orpheus1190 (Neptune6866)</footer>
+<footer>Made by Orpheus1190 (Neptune6866)</footer>
 
 <script>
-(async function(){
-  const list = document.getElementById('articles');
-  const search = document.getElementById('searchInput');
-  const catFilter = document.getElementById('filterCategory');
-  const authorFilter = document.getElementById('filterAuthor');
+let currentTab = 'articles';
+const itemsDiv = document.getElementById('items');
+const searchInput = document.getElementById('searchInput');
+const filterCategory = document.getElementById('filterCategory');
+const filterAuthor = document.getElementById('filterAuthor');
+const articleFiltersDiv = document.getElementById('articleFilters');
 
-  let articles = [];
+let articles = [];
+let lore = [];
 
-  async function loadArticles() {
-    try {
-      const res = await fetch('articles/index.json');
-      const files = await res.json();
-      const loaded = await Promise.all(
-        files.map(async f => {
-          const r = await fetch('articles/' + f);
-          const j = await r.json();
-          j._filename = f;
-          return j;
-        })
-      );
-      articles = loaded;
-      renderFilters();
-      renderArticles();
-    } catch (e) {
-      list.innerHTML = '<p style="color:#ff5555;">Failed to load articles.</p>';
-      console.error(e);
-    }
+function switchTab(tab) {
+  currentTab = tab;
+  itemsDiv.innerHTML = '';
+  if(tab === 'articles') {
+    articleFiltersDiv.style.display = 'block';
+  } else {
+    articleFiltersDiv.style.display = 'none';
   }
+  renderItems();
+}
 
-  function renderFilters() {
-    const cats = [...new Set(articles.map(a => a.category).filter(Boolean))];
-    const authorsSet = new Set();
-    articles.forEach(a => {
-      if(a.author) {
-        a.author.split(',').map(s => s.trim()).forEach(name => authorsSet.add(name));
-      }
-    });
-    const authors = [...authorsSet];
+async function loadItems() {
+  try {
+    const resArticles = await fetch('articles/index.json');
+    const filesArticles = await resArticles.json();
+    const loadedArticles = await Promise.all(filesArticles.map(async f => {
+      const r = await fetch('articles/' + f);
+      const j = await r.json();
+      j._filename = f;
+      return j;
+    }));
+    articles = loadedArticles;
 
-    catFilter.innerHTML = '<option value="">All</option>' + cats.map(c=>`<option>${c}</option>`).join('');
-    authorFilter.innerHTML = '<option value="">All</option>' + authors.map(a=>`<option>${a}</option>`).join('');
+    const reslore = await fetch('lore/index.json');
+    const fileslore = await reslore.json();
+    const loadedlore = await Promise.all(fileslore.map(async f => {
+      const r = await fetch('lore/' + f);
+      const j = await r.json();
+      j._filename = f;
+      return j;
+    }));
+    lore = loadedlore;
+
+    renderFilters();
+    renderItems();
+  } catch(e) {
+    itemsDiv.innerHTML = '<p style="color:#ff5555;">Failed to load items.</p>';
+    console.error(e);
   }
+}
 
-  function renderArticles() {
-    const query = search.value.toLowerCase();
-    const cat = catFilter.value;
-    const author = authorFilter.value;
-    list.innerHTML = '';
+function renderFilters() {
+  const cats = [...new Set(articles.map(a=>a.category).filter(Boolean))];
+  const authors = [...new Set(articles.flatMap(a=>a.author.split(',')).map(s=>s.trim()).filter(Boolean))];
+  filterCategory.innerHTML = '<option value="">All</option>' + cats.map(c=>`<option>${c}</option>`).join('');
+  filterAuthor.innerHTML = '<option value="">All</option>' + authors.map(a=>`<option>${a}</option>`).join('');
+}
 
-    articles.filter(a => 
-      (!query || a.title.toLowerCase().includes(query) || a.content.toLowerCase().includes(query)) &&
-      (!cat || a.category === cat) &&
-      (!author || a.author.split(',').map(s => s.trim()).includes(author))
-    ).forEach(a => {
+function renderItems() {
+  const query = searchInput.value.toLowerCase();
+  itemsDiv.innerHTML = '';
+  let list = currentTab === 'articles' ? articles : lore;
+  list.forEach(a => {
+    if(currentTab === 'articles') {
+      if(query && !a.title.toLowerCase().includes(query) && !a.content.toLowerCase().includes(query)) return;
+      if(filterCategory.value && a.category !== filterCategory.value) return;
+      if(filterAuthor.value && !a.author.split(',').map(s=>s.trim()).includes(filterAuthor.value)) return;
       const div = document.createElement('div');
       div.className = 'articleCard';
       div.innerHTML = `<strong>${a.title}</strong><br>${a.author} | ${a.category} | ${a.date}`;
-      div.onclick = () => openPopup(a);
-      list.appendChild(div);
-    });
-  }
+      div.onclick = ()=>openPopup(a);
+      itemsDiv.appendChild(div);
+    } else {
+      if(query && !a.title.toLowerCase().includes(query) && !a.content.toLowerCase().includes(query)) return;
+      const div = document.createElement('div');
+      div.className = 'articleCard';
+      div.innerHTML = `<strong>${a.title}</strong><br>${a.date}`;
+      div.onclick = ()=>openPopup(a);
+      itemsDiv.appendChild(div);
+    }
+  });
+}
 
-  const popupOverlay = document.getElementById('popupOverlay');
-  const popupTitle = document.getElementById('popupTitle');
-  const popupMeta = document.getElementById('popupMeta');
-  const popupContent = document.getElementById('popupContent');
-  const popupCloseBtn = document.getElementById('popupCloseBtn');
+const popupOverlay = document.getElementById('popupOverlay');
+const popupTitle = document.getElementById('popupTitle');
+const popupMeta = document.getElementById('popupMeta');
+const popupContent = document.getElementById('popupContent');
+document.getElementById('popupCloseBtn').onclick = () => { popupOverlay.style.display = 'none'; };
 
-  function openPopup(article){
-    popupTitle.textContent = article.title || '';
-    popupMeta.textContent = `${article.author} | ${article.category} | ${article.date}`;
-    popupContent.innerHTML = article.content || '';
-    popupOverlay.style.display = 'flex';
-  }
+function openPopup(item) {
+  popupTitle.textContent = item.title || '';
+  popupMeta.textContent = currentTab==='articles' ? `${item.author} | ${item.category} | ${item.date}` : item.date || '';
+  popupContent.innerHTML = item.content || '';
+  popupOverlay.style.display = 'flex';
+}
 
-  popupCloseBtn.onclick = () => {
-    popupOverlay.style.display = 'none';
-  };
+searchInput.oninput = filterCategory.onchange = filterAuthor.onchange = renderItems;
 
-  search.oninput = catFilter.onchange = authorFilter.onchange = renderArticles;
-  loadArticles();
-})();
+loadItems();
 </script>
 </body>
 </html>
